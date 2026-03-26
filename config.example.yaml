@@ -26,7 +26,7 @@ log_level: info
 # Track LLM token usage per model call (input/output/total tokens)
 # Logs at info level via TokenUsageMiddleware
 token_usage:
-  enabled: false
+  enabled: true
 
 # ============================================================================
 # Models Configuration
@@ -35,19 +35,19 @@ token_usage:
 
 models:
   # Example: Volcengine (Doubao) model
-  # - name: doubao-seed-1.8
-  #   display_name: Doubao-Seed-1.8
-  #   use: deerflow.models.patched_deepseek:PatchedChatDeepSeek
-  #   model: doubao-seed-1-8-251228
-  #   api_base: https://ark.cn-beijing.volces.com/api/v3
-  #   api_key: $VOLCENGINE_API_KEY
-  #   supports_thinking: true
-  #   supports_vision: true
-  #   supports_reasoning_effort: true
-  #   when_thinking_enabled:
-  #     extra_body:
-  #       thinking:
-  #         type: enabled
+  - name: doubao-seed-2.0-pro
+    display_name: Doubao-Seed-2.0-pro
+    use: deerflow.models.patched_deepseek:PatchedChatDeepSeek
+    model: doubao-seed-2-0-pro-260215
+    api_base: https://ark.cn-beijing.volces.com/api/v3
+    api_key: $LLM_API_KEY
+    supports_thinking: true
+    supports_vision: true
+    supports_reasoning_effort: true
+    when_thinking_enabled:
+      extra_body:
+        thinking:
+          type: enabled
 
   # Example: OpenAI model
   # - name: gpt-4
@@ -437,35 +437,35 @@ title:
   max_chars: 60
   model_name: null # Use default model (first model in models list)
 
-# ============================================================================
-# Summarization Configuration
-# ============================================================================
-# Automatically summarize conversation history when token limits are approached
-# This helps maintain context in long conversations without exceeding model limits
+#================================================================================
+# 汇总配置
+#================================================================================
+# 当达到令牌限制时自动总结对话历史记录
+# 这有助于在长时间对话中保持上下文而不超出模型限制
 
 summarization:
   enabled: true
 
-  # Model to use for summarization (null = use default model)
-  # Recommended: Use a lightweight, cost-effective model like "gpt-4o-mini" or similar
+  # 用于汇总的模型（null = 使用默认模型）
+  # 推荐：使用轻量级、经济高效的模型，如“gpt-4o-mini”或类似模型
   model_name: null
 
-  # Trigger conditions - at least one required
-  # Summarization runs when ANY threshold is met (OR logic)
-  # You can specify a single trigger or a list of triggers
+  # 触发条件 -至少需要一个
+  # 当满足任何阈值时运行汇总（或逻辑）
+  # 您可以指定单个触发器或触发器列表
   trigger:
-    # Trigger when token count reaches 15564
+    # 当 token 计数达到 15564 时触发
     - type: tokens
-      value: 15564
-    # Uncomment to also trigger when message count reaches 50
+      value: 200000
+    # 取消注释，当消息数达到 50 时也会触发
     # - type: messages
     #   value: 50
-    # Uncomment to trigger when 80% of model's max input tokens is reached
+    # 取消注释以在达到模型最大输入令牌的 80% 时触发
     # - type: fraction
     #   value: 0.8
 
-  # Context retention policy after summarization
-  # Specifies how much recent history to preserve
+  # 汇总后的上下文保留策略
+  # 指定要保留多少最近的历史记录
   keep:
     # Keep the most recent 10 messages (recommended)
     type: messages
@@ -477,28 +477,28 @@ summarization:
     # type: fraction
     # value: 0.3
 
-  # Maximum tokens to keep when preparing messages for summarization
-  # Set to null to skip trimming (not recommended for very long conversations)
-  trim_tokens_to_summarize: 15564
+  # 准备摘要消息时保留的最大标记
+  # 设置为 null 以跳过修剪（不建议用于很长的对话）
+  trim_tokens_to_summarize: null
 
-  # Custom summary prompt template (null = use default LangChain prompt)
-  # The prompt should guide the model to extract important context
+  # 自定义摘要提示模板（null=使用默认的LangChain提示）
+  # 提示应该指导模型提取重要的上下文
   summary_prompt: null
 
-# ============================================================================
-# Memory Configuration
-# ============================================================================
-# Global memory mechanism
-# Stores user context and conversation history for personalized responses
+#================================================================================
+# 内存配置
+#================================================================================
+# 全局内存机制
+# 存储用户上下文和对话历史记录以进行个性化响应
 memory:
   enabled: true
-  storage_path: memory.json # Path relative to backend directory
-  debounce_seconds: 30 # Wait time before processing queued updates
-  model_name: null # Use default model
-  max_facts: 100 # Maximum number of facts to store
-  fact_confidence_threshold: 0.7 # Minimum confidence for storing facts
-  injection_enabled: true # Whether to inject memory into system prompt
-  max_injection_tokens: 2000 # Maximum tokens for memory injection
+  storage_path: memory.json # 存储路径，相对于后端目录的路径
+  debounce_seconds: 30 # 处理排队更新之前的等待时间
+  model_name: null # 使用默认模型
+  max_facts: 100 # 存储的最大事实数
+  fact_confidence_threshold: 0.7 # 最小置信度阈值
+  injection_enabled: true # 是否启用内存注入
+  max_injection_tokens: 2000 # 内存注入的最大令牌数
 
 # ============================================================================
 # Checkpointer Configuration
@@ -533,12 +533,11 @@ checkpointer:
 #   type: postgres
 #   connection_string: postgresql://user:password@localhost:5432/deerflow
 
-# ============================================================================
-# IM Channels Configuration
-# ============================================================================
-# Connect DeerFlow to external messaging platforms.
-# All channels use outbound connections (WebSocket or polling) — no public IP required.
-
+#================================================================================
+# IM 频道配置
+#================================================================================
+# 连接DeerFlow到外部消息平台。
+# 所有通道都使用出站连接（WebSocket 或轮询）——不需要公共 IP。
 # channels:
 #   # LangGraph Server URL for thread/message management (default: http://localhost:2024)
 #   langgraph_url: http://localhost:2024
@@ -587,17 +586,17 @@ checkpointer:
 #             thinking_enabled: true
 #             subagent_enabled: true
 
-# ============================================================================
-# Guardrails Configuration
-# ============================================================================
-# Optional pre-execution authorization for tool calls.
-# When enabled, every tool call passes through the configured provider
-# before execution. Three options: built-in allowlist, OAP policy provider,
-# or custom provider. See backend/docs/GUARDRAILS.md for full documentation.
+#================================================================================
+# 护栏配置
+#================================================================================
+# 工具调用的可选预执行授权。
+# 启用后，每个工具调用都会通过配置的提供程序
+# 执行前。三个选项：内置白名单、OAP 策略提供程序、
+# 或自定义提供程序。请参阅 backend/docs/GUARDRAILS.md 以获取完整文档。
 #
-# Providers are loaded by class path via resolve_variable (same as models/tools).
+# 提供程序通过resolve_variable按类路径加载（与模型/工具相同）。
 
-# --- Option 1: Built-in AllowlistProvider (zero external deps) ---
+# ---选项 1：内置AllowlistProvider（零外部依赖）---
 # guardrails:
 #   enabled: true
 #   provider:
@@ -605,16 +604,16 @@ checkpointer:
 #     config:
 #       denied_tools: ["bash", "write_file"]
 
-# --- Option 2: OAP passport provider (open standard, any implementation) ---
-#   The Open Agent Passport (OAP) spec defines passport format and decision codes.
-#   Any OAP-compliant provider works. Example using APort (reference implementation):
-#     pip install aport-agent-guardrails && aport setup --framework deerflow
+# ---选项 2：OAP 通行证提供商（开放标准，任意实现）---
+# 开放代理护照 (OAP) 规范定义了护照格式和决策代码。
+# 任何符合 OAP 的提供商都可以工作。使用 APort 的示例（参考实现）：
+# pip install aport-agent-guardrails && aport setup --framework deerflow
 # guardrails:
 #   enabled: true
 #   provider:
 #     use: aport_guardrails.providers.generic:OAPGuardrailProvider
 
-# --- Option 3: Custom provider (any class with evaluate/aevaluate methods) ---
+# ---选项 3：自定义提供程序（任何具有评估/评估方法的类）---
 # guardrails:
 #   enabled: true
 #   provider:
