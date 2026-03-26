@@ -7,14 +7,15 @@ description: Use this skill when the user requests to generate, create, imagine,
 
 ## Overview
 
-This skill generates high-quality images using structured prompts and a Python script. The workflow includes creating JSON-formatted prompts and executing image generation with optional reference images.
+This skill generates high-quality images using structured prompts and a Python script. The workflow includes creating JSON-formatted prompts and executing image generation using Doubao Seedream-4.5 model from Volcano Engine.
 
 ## Core Capabilities
 
 - Create structured JSON prompts for AIGC image generation
-- Support multiple reference images for style/composition guidance
 - Generate images through automated Python script execution
+- Support multiple aspect ratios: 1:1, 4:3, 3:4, 16:9, 9:16
 - Handle various image generation scenarios (character design, scenes, products, etc.)
+- *Note: Reference image guidance is not currently supported by the Doubao Seedream API*
 
 ## Workflow
 

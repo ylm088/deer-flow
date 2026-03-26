@@ -35,8 +35,6 @@ def generate_image(
 ) -> str:
     with open(prompt_file, "r", encoding="utf-8") as f:
         prompt = f.read()
-    parts = []
-    i = 0
     
     # Filter out invalid reference images
     valid_reference_images = []
@@ -48,52 +46,58 @@ def generate_image(
     
     if len(valid_reference_images) < len(reference_images):
         print(f"Note: {len(reference_images) - len(valid_reference_images)} reference image(s) were skipped due to validation failure.")
-    
-    for reference_image in valid_reference_images:
-        i += 1
-        with open(reference_image, "rb") as f:
-            image_b64 = base64.b64encode(f.read()).decode("utf-8")
-        parts.append(
-            {
-                "inlineData": {
-                    "mimeType": "image/jpeg",
-                    "data": image_b64,
-                }
-            }
-        )
 
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("LLM_API_KEY")
     if not api_key:
-        return "GEMINI_API_KEY is not set"
+        return "LLM_API_KEY is not set"
+    
+    # Convert aspect ratio to size parameter
+    size_map = {
+        "1:1": "1024x1024",
+        "4:3": "1024x768",
+        "3:4": "768x1024",
+        "16:9": "1024x576",
+        "9:16": "576x1024",
+    }
+    size = size_map.get(aspect_ratio, "1024x1024")
+    
+    # 火山引擎 doubao-seedream 文生图 API 请求
     response = requests.post(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent",
+        "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/text2image/doubao-seedream-4-5-251128",
         headers={
-            "x-goog-api-key": api_key,
             "Content-Type": "application/json",
         },
+        params={
+            "access_token": api_key
+        },
         json={
-            "generationConfig": {"imageConfig": {"aspectRatio": aspect_ratio}},
-            "contents": [{"parts": [*parts, {"text": prompt}]}],
+            "prompt": prompt,
+            "size": size,
+            "n": 1,
+            "steps": 20,
+            "sampler_name": " Euler a",
+            "cfg_scale": 7.0,
+            "seed": -1
         },
     )
     response.raise_for_status()
-    json = response.json()
-    parts: list[dict] = json["candidates"][0]["content"]["parts"]
-    image_parts = [part for part in parts if part.get("inlineData", False)]
-    if len(image_parts) == 1:
-        base64_image = image_parts[0]["inlineData"]["data"]
+    result = response.json()
+    
+    if "data" in result and len(result["data"]) > 0:
+        base64_image = result["data"][0]["b64_image"]
         # Save the image to a file
         with open(output_file, "wb") as f:
             f.write(base64.b64decode(base64_image))
         return f"Successfully generated image to {output_file}"
     else:
-        raise Exception("Failed to generate image")
+        error_msg = result.get("error_msg", "Unknown error")
+        raise Exception(f"Failed to generate image: {error_msg}")
 
 
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Generate images using Gemini API")
+    parser = argparse.ArgumentParser(description="Generate images using Doubao Seedream API")
     parser.add_argument(
         "--prompt-file",
         required=True,
