@@ -51,46 +51,50 @@ def generate_image(
     if not api_key:
         return "LLM_API_KEY is not set"
     
-    # Convert aspect ratio to size parameter
+    # Convert aspect ratio to size parameter for Seedream 4.5
+    # Seedream 4.5 supports: 2K, 4K or specific pixel values
     size_map = {
-        "1:1": "1024x1024",
-        "4:3": "1024x768",
-        "3:4": "768x1024",
-        "16:9": "1024x576",
-        "9:16": "576x1024",
+        "1:1": "2048x2048",
+        "4:3": "2304x1728",
+        "3:4": "1728x2304",
+        "16:9": "2848x1600",
+        "9:16": "1600x2848",
+        "2:3": "1664x2496",
+        "3:2": "2496x1664",
     }
-    size = size_map.get(aspect_ratio, "1024x1024")
+    size = size_map.get(aspect_ratio, "2048x2048")
     
-    # 火山引擎 doubao-seedream 文生图 API 请求
+    # 火山引擎方舟平台 Seedream API 请求
+    # API 文档: https://www.volcengine.com/docs/82379/1824121
     response = requests.post(
-        "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/text2image/doubao-seedream-4-5-251128",
+        "https://ark.cn-beijing.volces.com/api/v3/images/generations",
         headers={
             "Content-Type": "application/json",
-        },
-        params={
-            "access_token": api_key
+            "Authorization": f"Bearer {api_key}",
         },
         json={
+            "model": "doubao-seedream-4-5-251128",
             "prompt": prompt,
             "size": size,
-            "n": 1,
-            "steps": 20,
-            "sampler_name": " Euler a",
-            "cfg_scale": 7.0,
-            "seed": -1
+            "response_format": "b64_json",
+            "watermark": False
         },
     )
-    response.raise_for_status()
+    
+    if response.status_code != 200:
+        print(f"API Error Response: {response.text}")
+        response.raise_for_status()
+    
     result = response.json()
     
     if "data" in result and len(result["data"]) > 0:
-        base64_image = result["data"][0]["b64_image"]
+        base64_image = result["data"][0]["b64_json"]
         # Save the image to a file
         with open(output_file, "wb") as f:
             f.write(base64.b64decode(base64_image))
         return f"Successfully generated image to {output_file}"
     else:
-        error_msg = result.get("error_msg", "Unknown error")
+        error_msg = result.get("error", {}).get("message", "Unknown error")
         raise Exception(f"Failed to generate image: {error_msg}")
 
 
@@ -101,13 +105,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--prompt-file",
         required=True,
-        help="Absolute path to JSON prompt file",
+        help="Absolute path to prompt file",
     )
     parser.add_argument(
         "--reference-images",
         nargs="*",
         default=[],
-        help="Absolute paths to reference images (space-separated)",
+        help="Absolute paths to reference images (space-separated) - Note: not supported by Seedream API",
     )
     parser.add_argument(
         "--output-file",
@@ -118,7 +122,7 @@ if __name__ == "__main__":
         "--aspect-ratio",
         required=False,
         default="16:9",
-        help="Aspect ratio of the generated image",
+        help="Aspect ratio of the generated image (1:1, 4:3, 3:4, 16:9, 9:16, 2:3, 3:2)",
     )
 
     args = parser.parse_args()
